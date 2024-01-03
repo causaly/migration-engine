@@ -14,7 +14,7 @@ import {
 import { HistoryLogEntry, Migration } from '../models';
 import { MigrationHistoryLog, MigrationRepo } from '../ports';
 
-export type GetMigrationStateDeps = {
+export type CollectMigrationStateDeps = {
   getMigrations: MigrationRepo['getMigrations'];
   getExecutedMigrations: MigrationHistoryLog['getExecutedMigrations'];
 };
@@ -26,8 +26,8 @@ export type MigrationStateEntry = Migration.Migration & {
 
 export type MigrationState = Array<MigrationStateEntry>;
 
-export function getMigrationState(): ReaderTaskEither.ReaderTaskEither<
-  GetMigrationStateDeps,
+export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
+  CollectMigrationStateDeps,
   | MigrationRepoReadError
   | MigrationHistoryLogNotFoundError
   | InvalidMigrationHistoryLogError
@@ -36,7 +36,7 @@ export function getMigrationState(): ReaderTaskEither.ReaderTaskEither<
   MigrationState
 > {
   return pipe(
-    ReaderTaskEither.ask<GetMigrationStateDeps>(),
+    ReaderTaskEither.ask<CollectMigrationStateDeps>(),
     ReaderTaskEither.chainTaskEitherK(
       ({ getMigrations, getExecutedMigrations }) => {
         return pipe(

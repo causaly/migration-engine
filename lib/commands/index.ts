@@ -1,2 +1,2 @@
 export * from './createEmptyMigration';
-export * from './getMigrationState';
+export * from './collectMigrationState';
