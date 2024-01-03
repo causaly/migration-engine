@@ -1,2 +1,2 @@
 export * from './MigrationRepo';
-export * from './MigrationHistory';
+export * from './MigrationHistoryLog';
