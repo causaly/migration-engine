@@ -3,20 +3,20 @@ import * as path from 'node:path';
 import { pipe } from 'fp-ts/lib/function';
 import { expectRightTaskEither } from 'jest-fp-ts-matchers';
 
-import { makeGetMigrations } from './getMigrations';
+import { makeListMigrations } from './listMigrations';
 import type { FileMigrationRepoContext } from './types';
 
-describe('getMigrations()', () => {
+describe('listMigrations()', () => {
   it('retrieves migrations from disk; in ts format', async () => {
     const ctx: FileMigrationRepoContext = {
       dirPath: path.resolve(__dirname, './mocks/migrations'),
       language: 'typescript',
     };
 
-    const getMigrations = makeGetMigrations(ctx);
+    const listMigrations = makeListMigrations(ctx);
 
     return pipe(
-      getMigrations(),
+      listMigrations(),
       expectRightTaskEither((migrations) => {
         expect(migrations).toHaveLength(2);
         expect(migrations).toMatchInlineSnapshot(`

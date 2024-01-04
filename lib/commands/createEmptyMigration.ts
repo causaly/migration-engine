@@ -6,10 +6,14 @@ import { kebabCase } from 'lodash/fp';
 import { z as zod } from 'zod';
 import { toValidationError, ValidationError } from 'zod-validation-error';
 
-import { MigrationRepoWriteError } from '../errors';
+import {
+  MigrationRepoReadError,
+  MigrationRepoWriteError,
+  MigrationTemplateNotFoundError,
+} from '../errors';
 import { MigrationId } from '../models';
 import { MigrationRepo } from '../ports';
-import { formatDateInUTC } from '../utils/formatDateInUTC';
+import { formatDateInUTC } from '../utils/date';
 
 const DATE_FORMAT_PATTERN = 'yyyyMMddHHmmss';
 
@@ -30,32 +34,42 @@ export function parseCreateEmptyMigrationInputProps(
 }
 
 export type CreateEmptyMigrationDeps = {
-  createMigration: MigrationRepo['createMigration'];
+  createMigrationFromTemplate: MigrationRepo['createMigrationFromTemplate'];
+  getMigrationTemplate: MigrationRepo['getMigrationTemplate'];
 };
 
 export function createEmptyMigration(
   props: CreateEmptyMigrationInputProps
 ): ReaderTaskEither.ReaderTaskEither<
   CreateEmptyMigrationDeps,
-  ValidationError | MigrationRepoWriteError,
+  | ValidationError
+  | MigrationRepoWriteError
+  | MigrationTemplateNotFoundError
+  | MigrationRepoReadError,
   void
 > {
   return pipe(
     ReaderTaskEither.ask<CreateEmptyMigrationDeps>(),
-    ReaderTaskEither.chainTaskEitherK(({ createMigration }) => {
-      return pipe(
-        Either.Do,
-        Either.bind('timestamp', () =>
-          pipe(props.date, formatDateInUTC(DATE_FORMAT_PATTERN))
-        ),
-        Either.let('description', () => kebabCase(props.description)),
-        Either.map(({ timestamp, description }) =>
-          [timestamp, description].join('-')
-        ),
-        Either.flatMap(MigrationId.parse),
-        TaskEither.fromEither,
-        TaskEither.flatMap(createMigration)
-      );
-    })
+    ReaderTaskEither.chainTaskEitherK(
+      ({ createMigrationFromTemplate, getMigrationTemplate }) => {
+        return pipe(
+          Either.Do,
+          Either.bind('timestamp', () =>
+            pipe(props.date, formatDateInUTC(DATE_FORMAT_PATTERN))
+          ),
+          Either.let('description', () => kebabCase(props.description)),
+          Either.map(({ timestamp, description }) =>
+            [timestamp, description].join('-')
+          ),
+          Either.flatMap(MigrationId.parse),
+          TaskEither.fromEither,
+          TaskEither.bindTo('migrationId'),
+          TaskEither.bindW('template', getMigrationTemplate),
+          TaskEither.flatMap(({ migrationId, template }) =>
+            createMigrationFromTemplate(migrationId, template)
+          )
+        );
+      }
+    )
   );
 }

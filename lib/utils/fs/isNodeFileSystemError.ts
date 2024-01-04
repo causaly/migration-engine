@@ -1,7 +1,4 @@
-export type NodeFileSystemError = {
-  code: string;
-  path: string;
-};
+import { NodeFileSystemError } from './errors';
 
 export function isNodeFileSystemError(
   error: unknown

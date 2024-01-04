@@ -7,7 +7,7 @@ import {
   MigrationHistoryLogNotFoundError,
   MigrationHistoryLogReadError,
 } from '../../../errors';
-import { isNodeFileSystemError } from './isNodeFileSystemError';
+import { isNodeFileSystemError } from '../../../utils/fs/isNodeFileSystemError';
 import { toMigrationHistoryLogReadError } from './toMigrationHistoryLogReadError';
 
 export function stat(

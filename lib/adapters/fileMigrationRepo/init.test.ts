@@ -9,7 +9,7 @@ import {
   expectRightTaskEither,
 } from 'jest-fp-ts-matchers';
 
-import { MigrationRepoInitError } from '../../errors';
+import { MigrationRepoWriteError } from '../../errors';
 import { makeInit } from './init';
 import type { FileMigrationRepoContext } from './types';
 
@@ -77,8 +77,10 @@ describe('init()', () => {
         ),
         TaskEither.flatMap(makeInit(ctx)),
         expectLeftTaskEither((err) => {
-          expect(err).toBeInstanceOf(MigrationRepoInitError);
-          expect(err.message).toMatch(/Invalid migration directory path/);
+          expect(err).toBeInstanceOf(MigrationRepoWriteError);
+          expect(err.message).toMatch(
+            /does not point to a directory on local disk/
+          );
         }),
         TaskEither.fromTask
       ),

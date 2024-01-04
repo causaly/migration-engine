@@ -1,5 +1,5 @@
-export class MigrationRepoInitError extends Error {
-  name = 'MigrationRepoInitError' as const;
+export class MigrationNotFoundError extends Error {
+  name = 'MigrationNotFoundError' as const;
 }
 
 export class MigrationRepoReadError extends Error {

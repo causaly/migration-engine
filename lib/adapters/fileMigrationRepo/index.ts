@@ -1,8 +1,10 @@
 import type { MigrationRepo } from '../../ports';
-import { makeCreateMigration } from './createMigration';
+import { makeCreateMigrationFromTemplate } from './createMigrationFromTemplate';
 import { makeDeleteMigration } from './deleteMigration';
-import { makeGetMigrations } from './getMigrations';
+import { makeGetMigrationTemplate } from './getMigrationTemplate';
 import { makeInit } from './init';
+import { makeListMigrations } from './listMigrations';
+import { makeReadMigration } from './readMigration';
 import type { FileMigrationRepoContext } from './types';
 
 export const fileMigrationRepo: {
@@ -11,7 +13,9 @@ export const fileMigrationRepo: {
   ) => MigrationRepo[K];
 } = {
   init: makeInit,
-  createMigration: makeCreateMigration,
-  getMigrations: makeGetMigrations,
+  getMigrationTemplate: makeGetMigrationTemplate,
+  createMigrationFromTemplate: makeCreateMigrationFromTemplate,
+  listMigrations: makeListMigrations,
   deleteMigration: makeDeleteMigration,
+  readMigration: makeReadMigration,
 };

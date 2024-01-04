@@ -9,13 +9,14 @@ import {
   InvalidMigrationState,
   MigrationHistoryLogNotFoundError,
   MigrationHistoryLogReadError,
+  MigrationRepoNotFoundError,
   MigrationRepoReadError,
 } from '../errors';
 import { HistoryLogEntry, Migration } from '../models';
 import { MigrationHistoryLog, MigrationRepo } from '../ports';
 
 export type CollectMigrationStateDeps = {
-  getMigrations: MigrationRepo['getMigrations'];
+  listMigrations: MigrationRepo['listMigrations'];
   getExecutedMigrations: MigrationHistoryLog['getExecutedMigrations'];
 };
 
@@ -28,22 +29,23 @@ export type MigrationState = Array<MigrationStateEntry>;
 
 export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
   CollectMigrationStateDeps,
-  | MigrationRepoReadError
-  | MigrationHistoryLogNotFoundError
   | InvalidMigrationHistoryLogError
+  | InvalidMigrationState
+  | MigrationHistoryLogNotFoundError
   | MigrationHistoryLogReadError
-  | InvalidMigrationState,
+  | MigrationRepoNotFoundError
+  | MigrationRepoReadError,
   MigrationState
 > {
   return pipe(
     ReaderTaskEither.ask<CollectMigrationStateDeps>(),
     ReaderTaskEither.chainTaskEitherK(
-      ({ getMigrations, getExecutedMigrations }) => {
+      ({ listMigrations, getExecutedMigrations }) => {
         return pipe(
           TaskEither.Do,
           TaskEither.bind('migrations', () =>
             pipe(
-              getMigrations(),
+              listMigrations(),
               TaskEither.map((migrations) =>
                 migrations.toSorted((migration, otherMigration) =>
                   migration.id.localeCompare(otherMigration.id)

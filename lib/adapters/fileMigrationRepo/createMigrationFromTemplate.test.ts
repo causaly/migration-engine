@@ -7,11 +7,12 @@ import * as TaskEither from 'fp-ts/TaskEither';
 import { expectRightTaskEither } from 'jest-fp-ts-matchers';
 
 import { MigrationId } from '../../models';
-import { makeCreateMigration } from './createMigration';
+import { makeCreateMigrationFromTemplate } from './createMigrationFromTemplate';
+import { makeGetMigrationTemplate } from './getMigrationTemplate';
 import { makeInit } from './init';
 import type { FileMigrationRepoContext } from './types';
 
-describe('createMigration()', () => {
+describe('createMigrationFromTemplate()', () => {
   it('creates migration on disk; in ts format', async () => {
     const ctx: FileMigrationRepoContext = {
       dirPath: path.join(os.tmpdir(), '/migrations-test-dir'),
@@ -19,6 +20,7 @@ describe('createMigration()', () => {
     };
 
     const migrationIdStr = '20240103-foobar';
+    const createMigrationFromTemplate = makeCreateMigrationFromTemplate(ctx);
 
     return TaskEither.bracket(
       pipe(
@@ -27,9 +29,10 @@ describe('createMigration()', () => {
           'migrationId',
           pipe(MigrationId.parse(migrationIdStr), TaskEither.fromEither)
         ),
-        TaskEither.bindW('initRes', makeInit(ctx)),
-        TaskEither.bindW('createMigrationRes', ({ migrationId }) =>
-          pipe(migrationId, makeCreateMigration(ctx))
+        TaskEither.bindW('template', makeGetMigrationTemplate(ctx)),
+        TaskEither.bindW('init', makeInit(ctx)),
+        TaskEither.bindW('response', ({ migrationId, template }) =>
+          createMigrationFromTemplate(migrationId, template)
         ),
         TaskEither.bindW('dirents', () =>
           TaskEither.fromTask(() =>
@@ -40,8 +43,8 @@ describe('createMigration()', () => {
             })
           )
         ),
-        expectRightTaskEither(({ createMigrationRes, dirents }) => {
-          expect(createMigrationRes).toBeUndefined();
+        expectRightTaskEither(({ response, dirents }) => {
+          expect(response).toBeUndefined();
           expect(dirents).toHaveLength(3);
           expect(dirents).toEqual(
             expect.arrayContaining([
@@ -74,6 +77,7 @@ describe('createMigration()', () => {
     };
 
     const migrationIdStr = '20240103-foobar';
+    const createMigrationFromTemplate = makeCreateMigrationFromTemplate(ctx);
 
     return TaskEither.bracket(
       pipe(
@@ -82,9 +86,10 @@ describe('createMigration()', () => {
           'migrationId',
           pipe(MigrationId.parse(migrationIdStr), TaskEither.fromEither)
         ),
-        TaskEither.bindW('initRes', makeInit(ctx)),
-        TaskEither.bindW('createMigrationRes', ({ migrationId }) =>
-          pipe(migrationId, makeCreateMigration(ctx))
+        TaskEither.bindW('template', makeGetMigrationTemplate(ctx)),
+        TaskEither.bindW('init', makeInit(ctx)),
+        TaskEither.bindW('response', ({ migrationId, template }) =>
+          createMigrationFromTemplate(migrationId, template)
         ),
         TaskEither.bindW('dirents', () =>
           TaskEither.fromTask(() =>
@@ -95,8 +100,8 @@ describe('createMigration()', () => {
             })
           )
         ),
-        expectRightTaskEither(({ createMigrationRes, dirents }) => {
-          expect(createMigrationRes).toBeUndefined();
+        expectRightTaskEither(({ response, dirents }) => {
+          expect(response).toBeUndefined();
           expect(dirents).toHaveLength(3);
           expect(dirents).toEqual(
             expect.arrayContaining([

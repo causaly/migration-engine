@@ -30,7 +30,7 @@ export function makeInit(
           )
         );
       }),
-      // check if history-log exists
+      // check if history-log already exists
       TaskEither.orElseW((err) => {
         if (err instanceof MigrationHistoryLogNotFoundError) {
           // initialize history-log
