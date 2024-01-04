@@ -2,13 +2,18 @@ import { constUndefined, pipe } from 'fp-ts/lib/function';
 import * as TaskEither from 'fp-ts/TaskEither';
 
 import {
-  MigrationHistoryLogNotFoundError,
+  MigrationHistoryLogReadError,
   MigrationHistoryLogWriteError,
 } from '../../errors';
 import type { MigrationHistoryLog } from '../../ports';
+import {
+  FileOrDirectoryNotFoundError,
+  FileSystemReadError,
+  FileSystemWriteError,
+  stat,
+  writeFile,
+} from '../../utils/fs';
 import type { FileMigrationHistoryLogContext } from './types';
-import { stat } from './utils/stat';
-import { writeFile } from './utils/writeFile';
 
 export function makeInit(
   ctx: FileMigrationHistoryLogContext
@@ -19,22 +24,42 @@ export function makeInit(
     return pipe(
       stat(filePath),
       // ensure filePath points to an actual file on disk
-      TaskEither.flatMap((stats) => {
-        if (stats.isFile()) {
-          return TaskEither.right(stats);
+      TaskEither.flatMap(
+        TaskEither.fromPredicate(
+          (stats) => stats.isFile(),
+          () =>
+            new MigrationHistoryLogWriteError(
+              `Unable to initialize migration history-log; "${filePath}" does not point to a file on local disk`
+            )
+        )
+      ),
+      TaskEither.mapLeft((err) => {
+        if (err instanceof FileSystemReadError) {
+          return new MigrationHistoryLogReadError(
+            `Unable to initialize migration history-log`,
+            { cause: err }
+          );
         }
 
-        return TaskEither.left(
-          new MigrationHistoryLogWriteError(
-            `Unable to initialize migration history-log; "${filePath}" does not point to a file on local disk`
-          )
-        );
+        return err;
       }),
       // check if history-log already exists
       TaskEither.orElseW((err) => {
-        if (err instanceof MigrationHistoryLogNotFoundError) {
+        if (err instanceof FileOrDirectoryNotFoundError) {
           // initialize history-log
-          return writeFile(filePath, JSON.stringify([], null, 2));
+          return pipe(
+            writeFile(filePath, JSON.stringify([], null, 2)),
+            TaskEither.mapLeft((err) => {
+              if (err instanceof FileSystemWriteError) {
+                return new MigrationHistoryLogWriteError(
+                  `Unable to initialize migration history-log`,
+                  { cause: err }
+                );
+              }
+
+              return err;
+            })
+          );
         }
 
         return TaskEither.left(err);

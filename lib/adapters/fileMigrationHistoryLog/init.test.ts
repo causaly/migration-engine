@@ -10,10 +10,9 @@ import {
 } from 'jest-fp-ts-matchers';
 
 import { MigrationHistoryLogWriteError } from '../../errors';
+import { stat, writeFile } from '../../utils/fs';
 import { makeInit } from './init';
 import type { FileMigrationHistoryLogContext } from './types';
-import { stat } from './utils/stat';
-import { writeFile } from './utils/writeFile';
 
 describe('init()', () => {
   it('initializes migration history-log on disk', async () => {
@@ -24,10 +23,10 @@ describe('init()', () => {
     return TaskEither.bracket(
       pipe(
         TaskEither.Do,
-        TaskEither.bind('initRes', makeInit(ctx)),
+        TaskEither.bind('response', makeInit(ctx)),
         TaskEither.bindW('stats', () => stat(ctx.filePath)),
-        expectRightTaskEither(({ initRes, stats }) => {
-          expect(initRes).toBeUndefined();
+        expectRightTaskEither(({ response, stats }) => {
+          expect(response).toBeUndefined();
           expect(stats.isFile()).toBe(true);
         }),
         TaskEither.fromTask
@@ -45,10 +44,10 @@ describe('init()', () => {
     return TaskEither.bracket(
       pipe(
         writeFile(ctx.filePath, JSON.stringify([], null, 2)),
-        TaskEither.bind('initRes', makeInit(ctx)),
+        TaskEither.bindW('response', makeInit(ctx)),
         TaskEither.bindW('stats', () => stat(ctx.filePath)),
-        expectRightTaskEither(({ initRes, stats }) => {
-          expect(initRes).toBeUndefined();
+        expectRightTaskEither(({ response, stats }) => {
+          expect(response).toBeUndefined();
           expect(stats.isFile()).toBe(true);
         }),
         TaskEither.fromTask

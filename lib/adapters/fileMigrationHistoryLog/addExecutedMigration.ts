@@ -4,10 +4,11 @@ import * as TaskEither from 'fp-ts/TaskEither';
 
 import { InvalidMigrationHistoryLogError } from '../../errors';
 import { MigrationHistoryLog } from '../../ports';
+import { writeFile } from '../../utils/fs';
 import { makeGetExecutedMigrations } from './getExecutedMigrations';
 import { HistoryLog } from './models';
 import type { FileMigrationHistoryLogContext } from './types';
-import { writeFile } from './utils/writeFile';
+import { toMigrationHistoryLogWriteError } from './utils/toMigrationHistoryLogWriteError';
 
 export function makeAddExecutedMigration(
   ctx: FileMigrationHistoryLogContext
@@ -30,7 +31,12 @@ export function makeAddExecutedMigration(
           })
         );
       }),
-      TaskEither.flatMap((contents) => writeFile(filePath, contents))
+      TaskEither.flatMap((contents) =>
+        pipe(
+          writeFile(filePath, contents),
+          TaskEither.mapLeft(toMigrationHistoryLogWriteError)
+        )
+      )
     );
   };
 }
