@@ -6,7 +6,7 @@ import {
   MigrationHistoryLogReadError,
   MigrationHistoryLogWriteError,
 } from '../errors';
-import { HistoryLogEntry } from '../models';
+import { HistoryLog, HistoryLogEntry } from '../models';
 
 export type MigrationHistoryLog = {
   init: () => TaskEither.TaskEither<
@@ -17,7 +17,7 @@ export type MigrationHistoryLog = {
     | MigrationHistoryLogNotFoundError
     | InvalidMigrationHistoryLogError
     | MigrationHistoryLogReadError,
-    Array<HistoryLogEntry.HistoryLogEntry>
+    HistoryLog.HistoryLog
   >;
   addExecutedMigration: (
     executedMigration: HistoryLogEntry.HistoryLogEntry
