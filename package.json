@@ -77,7 +77,6 @@
   "dependencies": {
     "date-fns": "^3.0.6",
     "fp-ts": "^2.16.1",
-    "glob": "^10.3.10",
     "lodash": "^4.17.21",
     "zod": "^3.20.0",
     "zod-validation-error": "^2.1.0"
