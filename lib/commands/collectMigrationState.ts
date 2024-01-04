@@ -6,7 +6,7 @@ import * as TaskEither from 'fp-ts/TaskEither';
 
 import {
   InvalidMigrationHistoryLogError,
-  InvalidMigrationState,
+  InvalidMigrationStateError,
   MigrationHistoryLogNotFoundError,
   MigrationHistoryLogReadError,
   MigrationRepoNotFoundError,
@@ -30,7 +30,7 @@ export type MigrationState = Array<MigrationStateEntry>;
 export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
   CollectMigrationStateDeps,
   | InvalidMigrationHistoryLogError
-  | InvalidMigrationState
+  | InvalidMigrationStateError
   | MigrationHistoryLogNotFoundError
   | MigrationHistoryLogReadError
   | MigrationRepoNotFoundError
@@ -66,10 +66,10 @@ export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
 function calculateMigrationState(
   migrations: Array<Migration.Migration>,
   historyLogEntries: Array<HistoryLogEntry.HistoryLogEntry>
-): Either.Either<InvalidMigrationState, MigrationState> {
+): Either.Either<InvalidMigrationStateError, MigrationState> {
   if (migrations.length < historyLogEntries.length) {
     return Either.left(
-      new InvalidMigrationState(
+      new InvalidMigrationStateError(
         'Invalid migration state; there atr more executed migrations than migrations'
       )
     );
@@ -81,7 +81,7 @@ function calculateMigrationState(
       (
         index,
         migration
-      ): Either.Either<InvalidMigrationState, MigrationStateEntry> => {
+      ): Either.Either<InvalidMigrationStateError, MigrationStateEntry> => {
         const historyLogEntry = historyLogEntries[index];
 
         if (historyLogEntry == null) {
@@ -94,7 +94,7 @@ function calculateMigrationState(
 
         if (migration.id !== historyLogEntry.id) {
           return Either.left(
-            new InvalidMigrationState(
+            new InvalidMigrationStateError(
               `Invalid migration state; expected migration "${historyLogEntry.id}", received "${migration.id}". This indicates that migrations have been added or removed out of order.`
             )
           );
@@ -102,7 +102,7 @@ function calculateMigrationState(
 
         if (migration.checksum !== historyLogEntry.checksum) {
           return Either.left(
-            new InvalidMigrationState(
+            new InvalidMigrationStateError(
               `Invalid migration state; checksum mismatch for migration "${migration.id}". This indicates that the migration code has been modified after it was executed.`
             )
           );

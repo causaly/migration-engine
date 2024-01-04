@@ -34,6 +34,6 @@ export class InvalidMigrationHistoryLogError extends Error {
   name = 'InvalidMigrationHistoryLogError' as const;
 }
 
-export class InvalidMigrationState extends Error {
-  name = 'InvalidMigrationState' as const;
+export class InvalidMigrationStateError extends Error {
+  name = 'InvalidMigrationStateError' as const;
 }
