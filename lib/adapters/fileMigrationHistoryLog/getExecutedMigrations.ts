@@ -6,13 +6,13 @@ import {
   MigrationHistoryLogNotFoundError,
   MigrationHistoryLogReadError,
 } from '../../errors';
+import { HistoryLog } from '../../models';
 import { MigrationHistoryLog } from '../../ports';
 import {
   FileOrDirectoryNotFoundError,
   FileSystemReadError,
   readFile,
 } from '../../utils/fs';
-import { HistoryLog } from './models';
 import type { FileMigrationHistoryLogContext } from './types';
 import { toInvalidMigrationHistoryLogError } from './utils/toInvalidMigrationHistoryLogError';
 

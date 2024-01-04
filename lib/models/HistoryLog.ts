@@ -4,7 +4,7 @@ import { pipe } from 'fp-ts/lib/function';
 import { z as zod } from 'zod';
 import { toValidationError, ValidationError } from 'zod-validation-error';
 
-import { HistoryLogEntry } from '../../../models';
+import * as HistoryLogEntry from './HistoryLogEntry';
 
 export const schema = zod.array(HistoryLogEntry.schema);
 

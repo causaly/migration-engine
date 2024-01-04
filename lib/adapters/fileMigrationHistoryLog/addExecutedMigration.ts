@@ -3,10 +3,10 @@ import { pipe } from 'fp-ts/lib/function';
 import * as TaskEither from 'fp-ts/TaskEither';
 
 import { InvalidMigrationHistoryLogError } from '../../errors';
+import { HistoryLog } from '../../models';
 import { MigrationHistoryLog } from '../../ports';
 import { writeFile } from '../../utils/fs';
 import { makeGetExecutedMigrations } from './getExecutedMigrations';
-import { HistoryLog } from './models';
 import type { FileMigrationHistoryLogContext } from './types';
 import { toMigrationHistoryLogWriteError } from './utils/toMigrationHistoryLogWriteError';
 
