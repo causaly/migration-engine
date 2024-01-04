@@ -1,10 +1,12 @@
 import { constUndefined, pipe } from 'fp-ts/lib/function';
 import * as TaskEither from 'fp-ts/TaskEither';
+import { isValidationErrorLike } from 'zod-validation-error';
 
 import {
   MigrationHistoryLogReadError,
   MigrationHistoryLogWriteError,
 } from '../../errors';
+import { HistoryLog } from '../../models';
 import type { MigrationHistoryLog } from '../../ports';
 import {
   FileOrDirectoryNotFoundError,
@@ -48,9 +50,15 @@ export function makeInit(
         if (err instanceof FileOrDirectoryNotFoundError) {
           // initialize history-log
           return pipe(
-            writeFile(filePath, JSON.stringify([], null, 2)),
+            HistoryLog.emptyHistoryLog,
+            HistoryLog.serialize,
+            TaskEither.fromEither,
+            TaskEither.flatMap((content) => writeFile(filePath, content)),
             TaskEither.mapLeft((err) => {
-              if (err instanceof FileSystemWriteError) {
+              if (
+                err instanceof FileSystemWriteError ||
+                isValidationErrorLike(err)
+              ) {
                 return new MigrationHistoryLogWriteError(
                   `Unable to initialize migration history-log`,
                   { cause: err }

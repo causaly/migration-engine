@@ -13,7 +13,7 @@ export function create(
   migrations: Array<Migration.Migration>,
   historyLog: HistoryLog.HistoryLog
 ): Either.Either<InvalidMigrationStateError, MigrationState> {
-  if (migrations.length < historyLog.length) {
+  if (migrations.length < historyLog.entries.length) {
     return Either.left(
       new InvalidMigrationStateError(
         'Invalid migration state; there atr more executed migrations than migrations'
@@ -31,7 +31,7 @@ export function create(
         InvalidMigrationStateError,
         MigrationStateRecord.MigrationStateRecord
       > => {
-        const historyLogEntry = historyLog[index];
+        const historyLogEntry = historyLog.entries[index];
 
         if (historyLogEntry == null) {
           return Either.of({

@@ -6,7 +6,9 @@ import { toValidationError, ValidationError } from 'zod-validation-error';
 
 import * as HistoryLogEntry from './HistoryLogEntry';
 
-export const schema = zod.array(HistoryLogEntry.schema);
+export const schema = zod.object({
+  entries: zod.array(HistoryLogEntry.schema),
+});
 
 export type HistoryLog = zod.infer<typeof schema>;
 
@@ -37,5 +39,12 @@ export function addEntry(
   historyLog: HistoryLog,
   entry: HistoryLogEntry.HistoryLogEntry
 ): HistoryLog {
-  return [...historyLog, entry];
+  return {
+    ...historyLog,
+    entries: [...historyLog.entries, entry],
+  };
 }
+
+export const emptyHistoryLog: HistoryLog = {
+  entries: [],
+};
