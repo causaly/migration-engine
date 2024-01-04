@@ -9,7 +9,7 @@ import type { FileMigrationRepoContext } from './types';
 describe('listMigrations()', () => {
   it('retrieves migrations from disk; in ts format', async () => {
     const ctx: FileMigrationRepoContext = {
-      dirPath: path.resolve(__dirname, './mocks/migrations'),
+      dirPath: path.resolve(__dirname, './mock/migrations'),
       language: 'typescript',
     };
 
