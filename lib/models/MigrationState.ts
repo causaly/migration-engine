@@ -4,10 +4,21 @@ import { pipe } from 'fp-ts/lib/function';
 
 import { InvalidMigrationStateError } from '../errors';
 import * as HistoryLog from './HistoryLog';
+import * as HistoryLogEntry from './HistoryLogEntry';
 import * as Migration from './Migration';
-import * as MigrationStateRecord from './MigrationStateRecord';
 
-export type MigrationState = Array<MigrationStateRecord.MigrationStateRecord>;
+export type ExecutedMigration = Migration.Migration & {
+  status: 'EXECUTED';
+  executedAt: HistoryLogEntry.HistoryLogEntry['executedAt'];
+};
+
+export type PendingMigration = Migration.Migration & {
+  status: 'PENDING';
+  executedAt: null;
+};
+
+export type MigrationStateRecord = ExecutedMigration | PendingMigration;
+export type MigrationState = Array<MigrationStateRecord>;
 
 export function create(
   migrations: Array<Migration.Migration>,
@@ -27,10 +38,7 @@ export function create(
       (
         index,
         migration
-      ): Either.Either<
-        InvalidMigrationStateError,
-        MigrationStateRecord.MigrationStateRecord
-      > => {
+      ): Either.Either<InvalidMigrationStateError, MigrationStateRecord> => {
         const historyLogEntry = historyLog.entries[index];
 
         if (historyLogEntry == null) {
@@ -66,4 +74,16 @@ export function create(
     ),
     ArrayFp.sequence(Either.Applicative)
   );
+}
+
+export function isPendingMigration(
+  record: MigrationStateRecord
+): record is PendingMigration {
+  return record.status === 'PENDING';
+}
+
+export function isExecutedMigration(
+  record: MigrationStateRecord
+): record is ExecutedMigration {
+  return record.status === 'EXECUTED';
 }

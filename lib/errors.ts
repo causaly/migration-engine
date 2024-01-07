@@ -37,3 +37,7 @@ export class InvalidMigrationHistoryLogError extends Error {
 export class InvalidMigrationStateError extends Error {
   name = 'InvalidMigrationStateError' as const;
 }
+
+export class MigrationRuntimeError extends Error {
+  name = 'MigrationRuntimeError' as const;
+}

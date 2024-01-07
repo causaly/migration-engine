@@ -5,4 +5,3 @@ export * as Migration from './Migration';
 export * as HistoryLog from './HistoryLog';
 export * as HistoryLogEntry from './HistoryLogEntry';
 export * as MigrationState from './MigrationState';
-export * as MigrationStateRecord from './MigrationStateRecord';

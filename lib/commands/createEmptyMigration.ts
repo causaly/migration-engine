@@ -4,7 +4,11 @@ import * as ReaderTaskEither from 'fp-ts/ReaderTaskEither';
 import * as TaskEither from 'fp-ts/TaskEither';
 import { kebabCase } from 'lodash/fp';
 import { z as zod } from 'zod';
-import { toValidationError, ValidationError } from 'zod-validation-error';
+import {
+  isValidationErrorLike,
+  toValidationError,
+  ValidationError,
+} from 'zod-validation-error';
 
 import {
   MigrationRepoReadError,
@@ -42,7 +46,6 @@ export function createEmptyMigration(
   props: CreateEmptyMigrationInputProps
 ): ReaderTaskEither.ReaderTaskEither<
   CreateEmptyMigrationDeps,
-  | ValidationError
   | MigrationRepoWriteError
   | MigrationTemplateNotFoundError
   | MigrationRepoReadError,
@@ -62,6 +65,15 @@ export function createEmptyMigration(
             [timestamp, description].join('-')
           ),
           Either.flatMap(MigrationId.parse),
+          Either.mapLeft((err) => {
+            if (isValidationErrorLike(err)) {
+              return new MigrationRepoWriteError(`Invalid migration ID`, {
+                cause: err,
+              });
+            }
+
+            return err;
+          }),
           TaskEither.fromEither,
           TaskEither.bindTo('migrationId'),
           TaskEither.bindW('template', getMigrationTemplate),
