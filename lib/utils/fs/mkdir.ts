@@ -1,3 +1,4 @@
+import type { MakeDirectoryOptions, PathLike } from 'node:fs';
 import { mkdir as mkdirNative } from 'node:fs/promises';
 
 import { constUndefined, pipe } from 'fp-ts/lib/function';
@@ -7,14 +8,14 @@ import { FileSystemWriteError } from './errors';
 import { toFileSystemWriteError } from './toFileSystemWriteError';
 
 export function mkdir(
-  dirPath: string
+  dirPath: PathLike,
+  options: MakeDirectoryOptions & {
+    recursive?: boolean | undefined;
+  }
 ): TaskEither.TaskEither<FileSystemWriteError, void> {
   return pipe(
     TaskEither.tryCatch(
-      () =>
-        mkdirNative(dirPath, {
-          recursive: true,
-        }),
+      () => mkdirNative(dirPath, options),
       toFileSystemWriteError
     ),
     TaskEither.map(constUndefined)

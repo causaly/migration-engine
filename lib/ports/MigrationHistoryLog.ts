@@ -1,31 +1,47 @@
 import * as TaskEither from 'fp-ts/TaskEither';
 
 import {
+  AcquireLockError,
   InvalidMigrationHistoryLogError,
   MigrationHistoryLogNotFoundError,
   MigrationHistoryLogReadError,
   MigrationHistoryLogWriteError,
+  ReleaseLockError,
 } from '../errors';
-import { HistoryLog, HistoryLogEntry } from '../models';
+import { History } from '../models';
 
 export type MigrationHistoryLog = {
   init: () => TaskEither.TaskEither<
     MigrationHistoryLogReadError | MigrationHistoryLogWriteError,
     void
   >;
-  getExecutedMigrations: () => TaskEither.TaskEither<
+  readHistory: () => TaskEither.TaskEither<
     | MigrationHistoryLogNotFoundError
     | InvalidMigrationHistoryLogError
     | MigrationHistoryLogReadError,
-    HistoryLog.HistoryLog
+    History.History
   >;
-  addExecutedMigration: (
-    executedMigration: HistoryLogEntry.HistoryLogEntry
-  ) => TaskEither.TaskEither<
+  acquireLock: () => TaskEither.TaskEither<
+    | AcquireLockError
     | MigrationHistoryLogNotFoundError
     | InvalidMigrationHistoryLogError
-    | MigrationHistoryLogReadError
-    | MigrationHistoryLogWriteError,
-    void
+    | MigrationHistoryLogReadError,
+    {
+      currentValue: History.History;
+      persistHistory: PersistHistoryFunc;
+      releaseLock: ReleaseLockFunc;
+    }
   >;
 };
+
+export type PersistHistoryFunc = (
+  history: History.History
+) => TaskEither.TaskEither<
+  InvalidMigrationHistoryLogError | MigrationHistoryLogWriteError,
+  void
+>;
+
+export type ReleaseLockFunc = () => TaskEither.TaskEither<
+  ReleaseLockError,
+  void
+>;

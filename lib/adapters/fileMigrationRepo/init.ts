@@ -42,7 +42,7 @@ export function makeInit(ctx: FileMigrationRepoContext): MigrationRepo['init'] {
       TaskEither.orElseW((err) => {
         if (err instanceof FileOrDirectoryNotFoundError) {
           return pipe(
-            mkdir(dirPath),
+            mkdir(dirPath, { recursive: true }),
             TaskEither.mapLeft((err) => {
               if (err instanceof FileSystemWriteError) {
                 return new MigrationRepoWriteError(

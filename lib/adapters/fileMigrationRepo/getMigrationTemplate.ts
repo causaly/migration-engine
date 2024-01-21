@@ -4,11 +4,7 @@ import { pipe } from 'fp-ts/lib/function';
 import * as Record from 'fp-ts/Record';
 import * as TaskEither from 'fp-ts/TaskEither';
 
-import {
-  MigrationRepoReadError,
-  MigrationTemplateNotFoundError,
-} from '../../errors';
-import type { MigrationRepo } from '../../ports';
+import { MigrationRepoReadError } from '../../errors';
 import {
   FileOrDirectoryNotFoundError,
   FileSystemReadError,
@@ -17,15 +13,16 @@ import {
 import type { FileMigrationRepoContext } from './types';
 import { getLanguageExtension } from './utils/getLanguageExtension';
 
-export function makeGetMigrationTemplate(
-  ctx: FileMigrationRepoContext
-): MigrationRepo['getMigrationTemplate'] {
+export function makeGetMigrationTemplate(ctx: FileMigrationRepoContext) {
   let cache: {
     up: string;
     down: string;
   } | null = null;
 
-  return function getMigrationTemplate() {
+  return function getMigrationTemplate(): TaskEither.TaskEither<
+    MigrationRepoReadError,
+    Record<'up' | 'down', string>
+  > {
     // performance optimization: memoize migration template
     if (cache != null) {
       return TaskEither.of(cache);
@@ -40,10 +37,10 @@ export function makeGetMigrationTemplate(
       },
       Record.map((filepath) =>
         pipe(
-          readFile(filepath),
+          readFile(filepath, { encoding: 'utf8' }),
           TaskEither.mapLeft((err) => {
             if (err instanceof FileOrDirectoryNotFoundError) {
-              return new MigrationTemplateNotFoundError(
+              return new MigrationRepoReadError(
                 `Migration template not found; unable to read "${filepath}"`,
                 { cause: err }
               );

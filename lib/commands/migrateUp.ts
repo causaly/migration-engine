@@ -11,6 +11,7 @@ import {
 } from 'zod-validation-error';
 
 import {
+  AcquireLockError,
   InvalidMigrationHistoryLogError,
   InvalidMigrationStateError,
   MigrationHistoryLogNotFoundError,
@@ -21,20 +22,17 @@ import {
   MigrationRepoReadError,
   MigrationRepoWriteError,
   MigrationRuntimeError,
-  MigrationTemplateNotFoundError,
+  ReleaseLockError,
 } from '../errors';
 import {
-  HistoryLogEntry,
+  History,
+  HistoryEntry,
   Migration,
   MigrationId,
   MigrationState,
 } from '../models';
 import { isPendingMigration } from '../models/MigrationState';
-import { MigrationHistoryLog } from '../ports';
-import {
-  collectMigrationState,
-  type CollectMigrationStateDeps,
-} from './collectMigrationState';
+import type { MigrationHistoryLog, MigrationRepo } from '../ports';
 
 const schema = zod.object({
   migrationId: MigrationId.schema.optional(),
@@ -48,8 +46,9 @@ export function parseMigrateUpInputProps(
   return Either.tryCatch(() => schema.parse(value), toValidationError());
 }
 
-export type MigrateUpDeps = CollectMigrationStateDeps & {
-  addExecutedMigration: MigrationHistoryLog['addExecutedMigration'];
+export type MigrateUpDeps = {
+  listMigrations: MigrationRepo['listMigrations'];
+  acquireLock: MigrationHistoryLog['acquireLock'];
 };
 
 export function migrateUp(
@@ -66,18 +65,36 @@ export function migrateUp(
   | MigrationRepoReadError
   | MigrationRepoWriteError
   | MigrationRuntimeError
-  | MigrationTemplateNotFoundError,
+  | AcquireLockError
+  | ReleaseLockError,
   Array<MigrationId.MigrationId>
 > {
   return pipe(
-    collectMigrationState(),
-    ReaderTaskEither.flatMapEither((migrationState) =>
-      calculateMigrationsToApply(migrationState, props.migrationId)
-    ),
-    ReaderTaskEither.flatMap((migrationsToApply) => {
+    ReaderTaskEither.ask<MigrateUpDeps>(),
+    ReaderTaskEither.chainTaskEitherK(({ listMigrations, acquireLock }) => {
       return pipe(
-        ReaderTaskEither.ask<MigrateUpDeps>(),
-        ReaderTaskEither.chainTaskEitherK(({ addExecutedMigration }) => {
+        TaskEither.Do,
+        TaskEither.bind('migrations', () =>
+          pipe(
+            listMigrations(),
+            TaskEither.map((migrations) =>
+              migrations.toSorted((migration, otherMigration) =>
+                migration.id.localeCompare(otherMigration.id)
+              )
+            )
+          )
+        ),
+        TaskEither.bindW('historyLock', () => acquireLock()),
+        TaskEither.bindW('migrationsToApply', ({ migrations, historyLock }) =>
+          pipe(
+            MigrationState.create(migrations, historyLock.currentValue),
+            Either.flatMap((migrationState) =>
+              calculateMigrationsToApply(migrationState, props.migrationId)
+            ),
+            TaskEither.fromEither
+          )
+        ),
+        TaskEither.flatMap(({ migrationsToApply, historyLock }) => {
           return pipe(
             migrationsToApply,
             ArrayFp.map((migration) =>
@@ -95,23 +112,30 @@ export function migrateUp(
                         )
                 ),
                 TaskEither.flatMapEither(() =>
-                  HistoryLogEntry.parse({
-                    id: migration.id,
-                    executedAt: new Date(),
-                    checksum: migration.checksum,
-                  })
-                ),
-                TaskEither.mapLeft((err) => {
-                  if (isValidationErrorLike(err)) {
-                    return new MigrationRuntimeError(
-                      `Invalid migration history log entry for migration "${migration.id}"`,
-                      { cause: err }
-                    );
-                  }
+                  pipe(
+                    HistoryEntry.parse({
+                      id: migration.id,
+                      executedAt: new Date(),
+                      checksum: migration.checksum,
+                    }),
+                    Either.mapLeft((err) => {
+                      if (isValidationErrorLike(err)) {
+                        return new MigrationRuntimeError(
+                          `Invalid migration history log entry for migration "${migration.id}"`,
+                          { cause: err }
+                        );
+                      }
 
-                  return err;
-                }),
-                TaskEither.flatMap(addExecutedMigration),
+                      return err;
+                    }),
+                    Either.map((entry) =>
+                      History.addEntry(historyLock.currentValue, entry)
+                    )
+                  )
+                ),
+                TaskEither.flatMap((nextHistory) =>
+                  historyLock.persistHistory(nextHistory)
+                ),
                 TaskEither.map(() => migration.id)
               )
             ),

@@ -1,4 +1,4 @@
-import { type Stats } from 'node:fs';
+import type { PathLike, Stats } from 'node:fs';
 import { stat as statNative } from 'node:fs/promises';
 
 import * as TaskEither from 'fp-ts/TaskEither';
@@ -8,7 +8,7 @@ import { isNodeFileSystemError } from './isNodeFileSystemError';
 import { toFileSystemReadError } from './toFileSystemReadError';
 
 export function stat(
-  dirPath: string
+  dirPath: PathLike
 ): TaskEither.TaskEither<
   FileOrDirectoryNotFoundError | FileSystemReadError,
   Stats

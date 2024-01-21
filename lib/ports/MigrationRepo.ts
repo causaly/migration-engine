@@ -5,7 +5,6 @@ import {
   MigrationRepoNotFoundError,
   MigrationRepoReadError,
   MigrationRepoWriteError,
-  MigrationTemplateNotFoundError,
 } from '../errors';
 import { Migration, MigrationId } from '../models';
 
@@ -14,12 +13,9 @@ export type MigrationRepo = {
     MigrationRepoReadError | MigrationRepoWriteError,
     void
   >;
-  getMigrationTemplate: () => TaskEither.TaskEither<
-    MigrationTemplateNotFoundError | MigrationRepoReadError,
-    {
-      up: string;
-      down: string;
-    }
+  listMigrations: () => TaskEither.TaskEither<
+    MigrationRepoNotFoundError | MigrationRepoReadError,
+    Array<Migration.Migration>
   >;
   readMigration: (
     id: MigrationId.MigrationId
@@ -27,18 +23,20 @@ export type MigrationRepo = {
     MigrationNotFoundError | MigrationRepoReadError,
     Migration.Migration
   >;
-  listMigrations: () => TaskEither.TaskEither<
-    MigrationRepoNotFoundError | MigrationRepoReadError,
-    Array<Migration.Migration>
+  createEmptyMigration: (
+    id: MigrationId.MigrationId
+  ) => TaskEither.TaskEither<
+    MigrationRepoReadError | MigrationRepoWriteError,
+    void
   >;
-  createMigrationFromTemplate: (
-    id: MigrationId.MigrationId,
-    template: {
-      up: string;
-      down: string;
-    }
-  ) => TaskEither.TaskEither<MigrationRepoWriteError, void>;
   deleteMigration: (
     id: MigrationId.MigrationId
   ) => TaskEither.TaskEither<MigrationRepoWriteError, void>;
+  // getMigrationTemplate: () => TaskEither.TaskEither<
+  //   MigrationTemplateNotFoundError | MigrationRepoReadError,
+  //   {
+  //     up: string;
+  //     down: string;
+  //   }
+  // >;
 };

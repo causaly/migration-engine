@@ -1,7 +1,3 @@
-export class MigrationNotFoundError extends Error {
-  name = 'MigrationNotFoundError' as const;
-}
-
 export class MigrationRepoReadError extends Error {
   name = 'MigrationRepoReadError' as const;
 }
@@ -14,8 +10,8 @@ export class MigrationRepoNotFoundError extends Error {
   name = 'MigrationRepoNotFoundError' as const;
 }
 
-export class MigrationTemplateNotFoundError extends Error {
-  name = 'MigrationTemplateNotFoundError' as const;
+export class MigrationNotFoundError extends Error {
+  name = 'MigrationNotFoundError' as const;
 }
 
 export class MigrationHistoryLogNotFoundError extends Error {
@@ -32,6 +28,14 @@ export class MigrationHistoryLogReadError extends Error {
 
 export class InvalidMigrationHistoryLogError extends Error {
   name = 'InvalidMigrationHistoryLogError' as const;
+}
+
+export class AcquireLockError extends Error {
+  name = 'AcquireLockError' as const;
+}
+
+export class ReleaseLockError extends Error {
+  name = 'ReleaseLockError' as const;
 }
 
 export class InvalidMigrationStateError extends Error {

@@ -1,4 +1,3 @@
-import { mkdir, rm } from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -10,7 +9,7 @@ import {
 } from 'jest-fp-ts-matchers';
 
 import { MigrationHistoryLogWriteError } from '../../errors';
-import { stat, writeFile } from '../../utils/fs';
+import { mkdir, rm, stat, writeFile } from '../../utils/fs';
 import { makeInit } from './init';
 import type { FileMigrationHistoryLogContext } from './types';
 
@@ -32,7 +31,7 @@ describe('init()', () => {
         TaskEither.fromTask
       ),
       (resource) => TaskEither.right(resource),
-      () => TaskEither.fromTask(() => rm(ctx.filePath, { recursive: true }))
+      () => rm(ctx.filePath, { recursive: true })
     )();
   });
 
@@ -53,7 +52,7 @@ describe('init()', () => {
         TaskEither.fromTask
       ),
       (resource) => TaskEither.right(resource),
-      () => TaskEither.fromTask(() => rm(ctx.filePath, { recursive: true }))
+      () => rm(ctx.filePath, { recursive: true })
     )();
   });
 
@@ -64,7 +63,7 @@ describe('init()', () => {
 
     return TaskEither.bracket(
       pipe(
-        TaskEither.fromTask(() => mkdir(ctx.filePath, { recursive: true })),
+        mkdir(ctx.filePath, { recursive: true }),
         TaskEither.flatMap(makeInit(ctx)),
         expectLeftTaskEither((err) => {
           expect(err).toBeInstanceOf(MigrationHistoryLogWriteError);
@@ -75,7 +74,7 @@ describe('init()', () => {
         TaskEither.fromTask
       ),
       (resource) => TaskEither.right(resource),
-      () => TaskEither.fromTask(() => rm(ctx.filePath, { recursive: true }))
+      () => rm(ctx.filePath, { recursive: true })
     )();
   });
 });

@@ -1,4 +1,3 @@
-import { readdir, rm } from 'node:fs/promises';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -7,12 +6,12 @@ import * as TaskEither from 'fp-ts/TaskEither';
 import { expectRightTaskEither } from 'jest-fp-ts-matchers';
 
 import { MigrationId } from '../../models';
-import { makeCreateMigrationFromTemplate } from './createMigrationFromTemplate';
-import { makeGetMigrationTemplate } from './getMigrationTemplate';
+import { readdir, rm } from '../../utils/fs';
+import { makeCreateEmptyMigration } from './createEmptyMigration';
 import { makeInit } from './init';
 import type { FileMigrationRepoContext } from './types';
 
-describe('createMigrationFromTemplate()', () => {
+describe('createEmptyMigration()', () => {
   it('creates migration on disk; in ts format', async () => {
     const ctx: FileMigrationRepoContext = {
       dirPath: path.join(os.tmpdir(), '/migrations-test-dir'),
@@ -20,7 +19,7 @@ describe('createMigrationFromTemplate()', () => {
     };
 
     const migrationIdStr = '20240103-foobar';
-    const createMigrationFromTemplate = makeCreateMigrationFromTemplate(ctx);
+    const createEmptyMigration = makeCreateEmptyMigration(ctx);
 
     return TaskEither.bracket(
       pipe(
@@ -29,19 +28,15 @@ describe('createMigrationFromTemplate()', () => {
           'migrationId',
           pipe(MigrationId.parse(migrationIdStr), TaskEither.fromEither)
         ),
-        TaskEither.bindW('template', makeGetMigrationTemplate(ctx)),
         TaskEither.bindW('init', makeInit(ctx)),
-        TaskEither.bindW('response', ({ migrationId, template }) =>
-          createMigrationFromTemplate(migrationId, template)
+        TaskEither.bindW('response', ({ migrationId }) =>
+          createEmptyMigration(migrationId)
         ),
         TaskEither.bindW('dirents', () =>
-          TaskEither.fromTask(() =>
-            readdir(ctx.dirPath, {
-              encoding: 'utf8',
-              recursive: true,
-              withFileTypes: true,
-            })
-          )
+          readdir(ctx.dirPath, {
+            encoding: 'utf8',
+            recursive: true,
+          })
         ),
         expectRightTaskEither(({ response, dirents }) => {
           expect(response).toBeUndefined();
@@ -66,7 +61,7 @@ describe('createMigrationFromTemplate()', () => {
         TaskEither.fromTask
       ),
       (resource) => TaskEither.right(resource),
-      () => TaskEither.fromTask(() => rm(ctx.dirPath, { recursive: true }))
+      () => rm(ctx.dirPath, { recursive: true })
     )();
   });
 
@@ -77,7 +72,7 @@ describe('createMigrationFromTemplate()', () => {
     };
 
     const migrationIdStr = '20240103-foobar';
-    const createMigrationFromTemplate = makeCreateMigrationFromTemplate(ctx);
+    const createEmptyMigration = makeCreateEmptyMigration(ctx);
 
     return TaskEither.bracket(
       pipe(
@@ -86,19 +81,15 @@ describe('createMigrationFromTemplate()', () => {
           'migrationId',
           pipe(MigrationId.parse(migrationIdStr), TaskEither.fromEither)
         ),
-        TaskEither.bindW('template', makeGetMigrationTemplate(ctx)),
         TaskEither.bindW('init', makeInit(ctx)),
-        TaskEither.bindW('response', ({ migrationId, template }) =>
-          createMigrationFromTemplate(migrationId, template)
+        TaskEither.bindW('response', ({ migrationId }) =>
+          createEmptyMigration(migrationId)
         ),
         TaskEither.bindW('dirents', () =>
-          TaskEither.fromTask(() =>
-            readdir(ctx.dirPath, {
-              encoding: 'utf8',
-              recursive: true,
-              withFileTypes: true,
-            })
-          )
+          readdir(ctx.dirPath, {
+            encoding: 'utf8',
+            recursive: true,
+          })
         ),
         expectRightTaskEither(({ response, dirents }) => {
           expect(response).toBeUndefined();
@@ -123,7 +114,7 @@ describe('createMigrationFromTemplate()', () => {
         TaskEither.fromTask
       ),
       (resource) => TaskEither.right(resource),
-      () => TaskEither.fromTask(() => rm(ctx.dirPath, { recursive: true }))
+      () => rm(ctx.dirPath, { recursive: true })
     )();
   });
 });

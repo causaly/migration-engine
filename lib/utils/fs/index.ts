@@ -6,3 +6,4 @@ export * from './readFile';
 export * from './rm';
 export * from './stat';
 export * from './writeFile';
+export * from './rmdir';

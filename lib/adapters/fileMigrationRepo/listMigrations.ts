@@ -25,7 +25,10 @@ export function makeListMigrations(
 ): MigrationRepo['listMigrations'] {
   return function getMigrations() {
     return pipe(
-      readdir(ctx.dirPath),
+      readdir(ctx.dirPath, {
+        encoding: 'utf8',
+        recursive: false,
+      }),
       // ensure migration repo exists
       TaskEither.mapLeft((err) => {
         if (err instanceof FileOrDirectoryNotFoundError) {

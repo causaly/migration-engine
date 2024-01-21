@@ -1,4 +1,4 @@
-import { type Dirent } from 'node:fs';
+import type { Dirent, ObjectEncodingOptions, PathLike } from 'node:fs';
 import { readdir as readdirNative } from 'node:fs/promises';
 
 import * as TaskEither from 'fp-ts/TaskEither';
@@ -8,7 +8,10 @@ import { isNodeFileSystemError } from './isNodeFileSystemError';
 import { toFileSystemReadError } from './toFileSystemReadError';
 
 export function readdir(
-  dirPath: string
+  dirPath: PathLike,
+  options: ObjectEncodingOptions & {
+    recursive?: boolean | undefined;
+  }
 ): TaskEither.TaskEither<
   FileOrDirectoryNotFoundError | FileSystemReadError,
   Array<Dirent>
@@ -16,8 +19,7 @@ export function readdir(
   return TaskEither.tryCatch(
     () =>
       readdirNative(dirPath, {
-        encoding: 'utf8',
-        recursive: false,
+        ...options,
         withFileTypes: true,
       }),
     (err) => {

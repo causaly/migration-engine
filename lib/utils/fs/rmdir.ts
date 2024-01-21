@@ -1,17 +1,17 @@
-import type { PathLike, RmOptions } from 'node:fs';
-import { rm as rmNative } from 'node:fs/promises';
+import type { PathLike, RmDirOptions } from 'node:fs';
+import { rmdir as rmdirNative } from 'node:fs/promises';
 
 import * as TaskEither from 'fp-ts/TaskEither';
 
 import { FileSystemWriteError } from './errors';
 import { toFileSystemWriteError } from './toFileSystemWriteError';
 
-export function rm(
+export function rmdir(
   filePath: PathLike,
-  options?: RmOptions
+  options?: RmDirOptions | undefined
 ): TaskEither.TaskEither<FileSystemWriteError, void> {
   return TaskEither.tryCatch(
-    () => rmNative(filePath, options),
+    () => rmdirNative(filePath, options),
     toFileSystemWriteError
   );
 }

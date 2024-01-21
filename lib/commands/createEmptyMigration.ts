@@ -10,11 +10,7 @@ import {
   ValidationError,
 } from 'zod-validation-error';
 
-import {
-  MigrationRepoReadError,
-  MigrationRepoWriteError,
-  MigrationTemplateNotFoundError,
-} from '../errors';
+import { MigrationRepoReadError, MigrationRepoWriteError } from '../errors';
 import { MigrationId } from '../models';
 import { MigrationRepo } from '../ports';
 import { formatDateInUTC } from '../utils/date';
@@ -38,50 +34,41 @@ export function parseCreateEmptyMigrationInputProps(
 }
 
 export type CreateEmptyMigrationDeps = {
-  createMigrationFromTemplate: MigrationRepo['createMigrationFromTemplate'];
-  getMigrationTemplate: MigrationRepo['getMigrationTemplate'];
+  createEmptyMigration: MigrationRepo['createEmptyMigration'];
 };
 
 export function createEmptyMigration(
   props: CreateEmptyMigrationInputProps
 ): ReaderTaskEither.ReaderTaskEither<
   CreateEmptyMigrationDeps,
-  | MigrationRepoWriteError
-  | MigrationTemplateNotFoundError
-  | MigrationRepoReadError,
+  MigrationRepoWriteError | MigrationRepoReadError,
   void
 > {
   return pipe(
     ReaderTaskEither.ask<CreateEmptyMigrationDeps>(),
-    ReaderTaskEither.chainTaskEitherK(
-      ({ createMigrationFromTemplate, getMigrationTemplate }) => {
-        return pipe(
-          Either.Do,
-          Either.bind('timestamp', () =>
-            pipe(props.date, formatDateInUTC(DATE_FORMAT_PATTERN))
-          ),
-          Either.let('description', () => kebabCase(props.description)),
-          Either.map(({ timestamp, description }) =>
-            [timestamp, description].join('-')
-          ),
-          Either.flatMap(MigrationId.parse),
-          Either.mapLeft((err) => {
-            if (isValidationErrorLike(err)) {
-              return new MigrationRepoWriteError(`Invalid migration ID`, {
-                cause: err,
-              });
-            }
+    ReaderTaskEither.chainTaskEitherK(({ createEmptyMigration }) => {
+      return pipe(
+        Either.Do,
+        Either.bind('timestamp', () =>
+          pipe(props.date, formatDateInUTC(DATE_FORMAT_PATTERN))
+        ),
+        Either.let('description', () => kebabCase(props.description)),
+        Either.map(({ timestamp, description }) =>
+          [timestamp, description].join('-')
+        ),
+        Either.flatMap(MigrationId.parse),
+        Either.mapLeft((err) => {
+          if (isValidationErrorLike(err)) {
+            return new MigrationRepoWriteError(`Invalid migration ID`, {
+              cause: err,
+            });
+          }
 
-            return err;
-          }),
-          TaskEither.fromEither,
-          TaskEither.bindTo('migrationId'),
-          TaskEither.bindW('template', getMigrationTemplate),
-          TaskEither.flatMap(({ migrationId, template }) =>
-            createMigrationFromTemplate(migrationId, template)
-          )
-        );
-      }
-    )
+          return err;
+        }),
+        TaskEither.fromEither,
+        TaskEither.flatMap(createEmptyMigration)
+      );
+    })
   );
 }

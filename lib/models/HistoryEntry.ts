@@ -11,12 +11,12 @@ export const schema = zod
     executedAt: zod.coerce.date(),
     checksum: Checksum.schema,
   })
-  .brand<'HistoryLogEntry'>();
+  .brand<'HistoryEntry'>();
 
-export type HistoryLogEntry = zod.infer<typeof schema>;
+export type HistoryEntry = zod.infer<typeof schema>;
 
 export function parse(
   value: zod.input<typeof schema>
-): Either.Either<ValidationError, HistoryLogEntry> {
+): Either.Either<ValidationError, HistoryEntry> {
   return Either.tryCatch(() => schema.parse(value), toValidationError());
 }
