@@ -6,7 +6,7 @@ import {
   MigrationHistoryLogReadError,
   MigrationHistoryLogWriteError,
 } from '../../errors';
-import { HistoryLog } from '../../models';
+import { History } from '../../models';
 import type { MigrationHistoryLog } from '../../ports';
 import {
   FileOrDirectoryNotFoundError,
@@ -50,8 +50,8 @@ export function makeInit(
         if (err instanceof FileOrDirectoryNotFoundError) {
           // initialize history-log
           return pipe(
-            HistoryLog.emptyHistoryLog,
-            HistoryLog.serialize,
+            History.emptyHistoryLog,
+            History.serialize,
             TaskEither.fromEither,
             TaskEither.flatMap((content) => writeFile(filePath, content)),
             TaskEither.mapLeft((err) => {

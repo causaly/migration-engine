@@ -4,29 +4,29 @@ import { pipe } from 'fp-ts/lib/function';
 import { z as zod } from 'zod';
 import { toValidationError, ValidationError } from 'zod-validation-error';
 
-import * as HistoryLogEntry from './HistoryLogEntry';
+import * as HistoryLogEntry from './HistoryEntry';
 
 export const schema = zod.object({
   entries: zod.array(HistoryLogEntry.schema),
 });
 
-export type HistoryLog = zod.infer<typeof schema>;
+export type History = zod.infer<typeof schema>;
 
 export function parse(
   value: zod.input<typeof schema>
-): Either.Either<ValidationError, HistoryLog> {
+): Either.Either<ValidationError, History> {
   return Either.tryCatch(() => schema.parse(value), toValidationError());
 }
 
 export function serialize(
-  historyLog: HistoryLog
+  history: History
 ): Either.Either<ValidationError, string> {
-  return pipe(Json.stringify(historyLog), Either.mapLeft(toValidationError()));
+  return pipe(Json.stringify(history), Either.mapLeft(toValidationError()));
 }
 
 export function deserialize(
   content: string
-): Either.Either<ValidationError, HistoryLog> {
+): Either.Either<ValidationError, History> {
   return pipe(
     Json.parse(content),
     Either.mapLeft(toValidationError()),
@@ -36,15 +36,15 @@ export function deserialize(
 }
 
 export function addEntry(
-  historyLog: HistoryLog,
-  entry: HistoryLogEntry.HistoryLogEntry
-): HistoryLog {
+  history: History,
+  entry: HistoryLogEntry.HistoryEntry
+): History {
   return {
-    ...historyLog,
-    entries: [...historyLog.entries, entry],
+    ...history,
+    entries: [...history.entries, entry],
   };
 }
 
-export const emptyHistoryLog: HistoryLog = {
+export const emptyHistoryLog: History = {
   entries: [],
 };

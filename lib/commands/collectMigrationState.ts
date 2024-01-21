@@ -15,7 +15,7 @@ import { MigrationHistoryLog, MigrationRepo } from '../ports';
 
 export type CollectMigrationStateDeps = {
   listMigrations: MigrationRepo['listMigrations'];
-  getExecutedMigrations: MigrationHistoryLog['getExecutedMigrations'];
+  readHistory: MigrationHistoryLog['readHistory'];
 };
 
 export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
@@ -30,26 +30,24 @@ export function collectMigrationState(): ReaderTaskEither.ReaderTaskEither<
 > {
   return pipe(
     ReaderTaskEither.ask<CollectMigrationStateDeps>(),
-    ReaderTaskEither.chainTaskEitherK(
-      ({ listMigrations, getExecutedMigrations }) => {
-        return pipe(
-          TaskEither.Do,
-          TaskEither.bind('migrations', () =>
-            pipe(
-              listMigrations(),
-              TaskEither.map((migrations) =>
-                migrations.toSorted((migration, otherMigration) =>
-                  migration.id.localeCompare(otherMigration.id)
-                )
+    ReaderTaskEither.chainTaskEitherK(({ listMigrations, readHistory }) => {
+      return pipe(
+        TaskEither.Do,
+        TaskEither.bind('migrations', () =>
+          pipe(
+            listMigrations(),
+            TaskEither.map((migrations) =>
+              migrations.toSorted((migration, otherMigration) =>
+                migration.id.localeCompare(otherMigration.id)
               )
             )
-          ),
-          TaskEither.bindW('historyLogEntries', () => getExecutedMigrations()),
-          TaskEither.flatMapEither(({ migrations, historyLogEntries }) =>
-            MigrationState.create(migrations, historyLogEntries)
           )
-        );
-      }
-    )
+        ),
+        TaskEither.bindW('history', () => readHistory()),
+        TaskEither.flatMapEither(({ migrations, history }) =>
+          MigrationState.create(migrations, history)
+        )
+      );
+    })
   );
 }

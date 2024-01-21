@@ -3,13 +3,13 @@ import * as Either from 'fp-ts/Either';
 import { pipe } from 'fp-ts/lib/function';
 
 import { InvalidMigrationStateError } from '../errors';
-import * as HistoryLog from './HistoryLog';
-import * as HistoryLogEntry from './HistoryLogEntry';
+import * as History from './History';
+import * as HistoryEntry from './HistoryEntry';
 import * as Migration from './Migration';
 
 export type ExecutedMigration = Migration.Migration & {
   status: 'EXECUTED';
-  executedAt: HistoryLogEntry.HistoryLogEntry['executedAt'];
+  executedAt: HistoryEntry.HistoryEntry['executedAt'];
 };
 
 export type PendingMigration = Migration.Migration & {
@@ -22,9 +22,9 @@ export type MigrationState = Array<MigrationStateRecord>;
 
 export function create(
   migrations: Array<Migration.Migration>,
-  historyLog: HistoryLog.HistoryLog
+  history: History.History
 ): Either.Either<InvalidMigrationStateError, MigrationState> {
-  if (migrations.length < historyLog.entries.length) {
+  if (migrations.length < history.entries.length) {
     return Either.left(
       new InvalidMigrationStateError(
         'Invalid migration state; there atr more executed migrations than migrations'
@@ -39,7 +39,7 @@ export function create(
         index,
         migration
       ): Either.Either<InvalidMigrationStateError, MigrationStateRecord> => {
-        const historyLogEntry = historyLog.entries[index];
+        const historyLogEntry = history.entries[index];
 
         if (historyLogEntry == null) {
           return Either.of({

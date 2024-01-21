@@ -1,7 +1,7 @@
 import type { MigrationHistoryLog } from '../../ports';
-import { makeAddExecutedMigration } from './addExecutedMigration';
-import { makeGetExecutedMigrations } from './getExecutedMigrations';
+import { makeAcquireLock } from './acquireLock';
 import { makeInit } from './init';
+import { makeReadHistory } from './readHistory';
 import type { FileMigrationHistoryLogContext } from './types';
 
 export const fileMigrationHistoryLog: {
@@ -10,6 +10,6 @@ export const fileMigrationHistoryLog: {
   ) => MigrationHistoryLog[K];
 } = {
   init: makeInit,
-  getExecutedMigrations: makeGetExecutedMigrations,
-  addExecutedMigration: makeAddExecutedMigration,
+  readHistory: makeReadHistory,
+  acquireLock: makeAcquireLock,
 };
