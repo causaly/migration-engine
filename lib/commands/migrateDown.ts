@@ -4,11 +4,7 @@ import { pipe } from 'fp-ts/function';
 import * as ReaderTaskEither from 'fp-ts/ReaderTaskEither';
 import * as TaskEither from 'fp-ts/TaskEither';
 import { z as zod } from 'zod';
-import {
-  isValidationErrorLike,
-  toValidationError,
-  ValidationError,
-} from 'zod-validation-error';
+import { toValidationError, ValidationError } from 'zod-validation-error';
 
 import {
   AcquireLockError,
@@ -24,37 +20,31 @@ import {
   MigrationRuntimeError,
   ReleaseLockError,
 } from '../errors';
-import {
-  History,
-  HistoryRecord,
-  Migration,
-  MigrationId,
-  MigrationState,
-} from '../models';
-import { isPendingMigration } from '../models/MigrationState';
+import { History, Migration, MigrationId, MigrationState } from '../models';
+import { isAppliedMigration } from '../models/MigrationState';
 import type { MigrationHistoryLog, MigrationRepo } from '../ports';
 
 const schema = zod.object({
   migrationId: MigrationId.schema.optional(),
 });
 
-export type MigrateUpInputProps = zod.infer<typeof schema>;
+export type MigrateDownInputProps = zod.infer<typeof schema>;
 
-export function parseMigrateUpInputProps(
+export function parseMigrateDownInputProps(
   value: zod.input<typeof schema>
-): Either.Either<ValidationError, MigrateUpInputProps> {
+): Either.Either<ValidationError, MigrateDownInputProps> {
   return Either.tryCatch(() => schema.parse(value), toValidationError());
 }
 
-export type MigrateUpDeps = {
+export type MigrateDownDeps = {
   listMigrations: MigrationRepo['listMigrations'];
   acquireLock: MigrationHistoryLog['acquireLock'];
 };
 
-export function migrateUp(
-  props: MigrateUpInputProps
+export function migrateDown(
+  props: MigrateDownInputProps
 ): ReaderTaskEither.ReaderTaskEither<
-  MigrateUpDeps,
+  MigrateDownDeps,
   | InvalidMigrationHistoryLogError
   | InvalidMigrationStateError
   | MigrationHistoryLogNotFoundError
@@ -70,7 +60,7 @@ export function migrateUp(
   Array<MigrationId.MigrationId>
 > {
   return pipe(
-    ReaderTaskEither.ask<MigrateUpDeps>(),
+    ReaderTaskEither.ask<MigrateDownDeps>(),
     ReaderTaskEither.chainTaskEitherK(({ listMigrations, acquireLock }) => {
       return pipe(
         TaskEither.Do,
@@ -85,48 +75,34 @@ export function migrateUp(
           )
         ),
         TaskEither.bindW('historyLock', () => acquireLock()),
-        TaskEither.bindW('migrationsToApply', ({ migrations, historyLock }) =>
-          pipe(
-            MigrationState.create(migrations, historyLock.currentValue),
-            Either.flatMap((migrationState) =>
-              calculateMigrationsToApply(migrationState, props.migrationId)
-            ),
-            TaskEither.fromEither
-          )
+        TaskEither.bindW(
+          'migrationsToRollback',
+          ({ migrations, historyLock }) =>
+            pipe(
+              MigrationState.create(migrations, historyLock.currentValue),
+              Either.flatMap((migrationState) =>
+                calculateMigrationsToRollback(migrationState, props.migrationId)
+              ),
+              TaskEither.fromEither
+            )
         ),
-        TaskEither.flatMap(({ migrationsToApply, historyLock }) => {
+        TaskEither.flatMap(({ migrationsToRollback, historyLock }) => {
           return pipe(
-            migrationsToApply,
+            migrationsToRollback,
             ArrayFp.map((migration) =>
               pipe(
                 TaskEither.tryCatch(
-                  () => migration.up(),
+                  () => migration.down(),
                   (err) =>
                     new MigrationRuntimeError(
-                      `Unknown error occurred while applying migration "${migration.id}"`,
+                      `Unknown error occurred while rolling back migration "${migration.id}"`,
                       err instanceof Error ? { cause: err } : undefined
                     )
                 ),
                 TaskEither.flatMapEither(() =>
-                  pipe(
-                    HistoryRecord.parse({
-                      id: migration.id,
-                      executedAt: new Date(),
-                      checksum: migration.checksum,
-                    }),
-                    Either.mapLeft((err) => {
-                      if (isValidationErrorLike(err)) {
-                        return new MigrationRuntimeError(
-                          `Invalid migration history record for migration "${migration.id}"`,
-                          { cause: err }
-                        );
-                      }
-
-                      return err;
-                    }),
-                    Either.map((record) =>
-                      History.appendRecord(historyLock.currentValue, record)
-                    )
+                  History.deleteRecordById(
+                    historyLock.currentValue,
+                    migration.id
                   )
                 ),
                 TaskEither.flatMap((nextHistory) =>
@@ -143,7 +119,7 @@ export function migrateUp(
   );
 }
 
-function calculateMigrationsToApply(
+function calculateMigrationsToRollback(
   migrationState: MigrationState.MigrationState,
   targetMigrationId?: MigrationId.MigrationId
 ): Either.Either<
@@ -151,10 +127,10 @@ function calculateMigrationsToApply(
   Array<Migration.Migration>
 > {
   if (targetMigrationId == null) {
-    return Either.of(migrationState.filter(isPendingMigration));
+    return Either.of(migrationState.filter(isAppliedMigration).toReversed());
   }
 
-  const targetIndex = migrationState.findLastIndex(
+  const targetIndex = migrationState.findIndex(
     (migration) => migration.id === targetMigrationId
   );
 
@@ -168,15 +144,15 @@ function calculateMigrationsToApply(
 
   const migrationRecord = migrationState[targetIndex];
 
-  if (migrationRecord.status === 'APPLIED') {
+  if (migrationRecord.status === 'PENDING') {
     return Either.left(
       new MigrationRuntimeError(
-        `Target migration "${targetMigrationId}" is already applied`
+        `Target migration "${targetMigrationId}" has not been applied`
       )
     );
   }
 
   return Either.of(
-    migrationState.slice(0, targetIndex + 1).filter(isPendingMigration)
+    migrationState.slice(targetIndex).filter(isAppliedMigration).toReversed()
   );
 }

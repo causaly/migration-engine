@@ -21,10 +21,10 @@ describe('readHistory()', () => {
     return pipe(
       readHistory(),
       expectRightTaskEither((history) => {
-        expect(history.entries).toHaveLength(2);
+        expect(history.records).toHaveLength(2);
         expect(history).toMatchInlineSnapshot(`
           {
-            "entries": [
+            "records": [
               {
                 "checksum": "f524ee4ad943b8312921906d9ef52b1b",
                 "executedAt": 2024-01-01T00:00:00.000Z,

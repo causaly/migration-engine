@@ -12,7 +12,7 @@ import {
 import { lock } from 'proper-lockfile';
 
 import { AcquireLockError } from '../../errors';
-import { History, HistoryEntry } from '../../models';
+import { History, HistoryRecord } from '../../models';
 import { rm } from '../../utils/fs';
 import { makeAcquireLock } from './acquireLock';
 import { makeInit } from './init';
@@ -55,24 +55,24 @@ describe('acquireLock()', () => {
         const history = lock.currentValue;
         expect(history).toMatchInlineSnapshot(`
           {
-            "entries": [],
+            "records": [],
           }
         `);
 
         // amend history
         return pipe(
-          HistoryEntry.parse({
+          HistoryRecord.parse({
             id: '20240101-one',
             checksum: 'f524ee4ad943b8312921906d9ef52b1b',
             executedAt: new Date('2024-01-01T00:00:00.000Z'),
           }),
-          Either.map((entry) => History.addEntry(history, entry)),
+          Either.map((record) => History.appendRecord(history, record)),
           TaskEither.fromEither,
           TaskEither.flatMap(lock.persistHistory),
           TaskEither.tap(() => {
             expect(lock.currentValue).toMatchInlineSnapshot(`
               {
-                "entries": [
+                "records": [
                   {
                     "checksum": "f524ee4ad943b8312921906d9ef52b1b",
                     "executedAt": 2024-01-01T00:00:00.000Z,

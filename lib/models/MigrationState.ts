@@ -4,12 +4,12 @@ import { pipe } from 'fp-ts/lib/function';
 
 import { InvalidMigrationStateError } from '../errors';
 import * as History from './History';
-import * as HistoryEntry from './HistoryEntry';
+import * as HistoryRecord from './HistoryRecord';
 import * as Migration from './Migration';
 
-export type ExecutedMigration = Migration.Migration & {
-  status: 'EXECUTED';
-  executedAt: HistoryEntry.HistoryEntry['executedAt'];
+export type AppliedMigration = Migration.Migration & {
+  status: 'APPLIED';
+  executedAt: HistoryRecord.HistoryRecord['executedAt'];
 };
 
 export type PendingMigration = Migration.Migration & {
@@ -17,14 +17,14 @@ export type PendingMigration = Migration.Migration & {
   executedAt: null;
 };
 
-export type MigrationStateRecord = ExecutedMigration | PendingMigration;
+export type MigrationStateRecord = AppliedMigration | PendingMigration;
 export type MigrationState = Array<MigrationStateRecord>;
 
 export function create(
   migrations: Array<Migration.Migration>,
   history: History.History
 ): Either.Either<InvalidMigrationStateError, MigrationState> {
-  if (migrations.length < history.entries.length) {
+  if (migrations.length < history.records.length) {
     return Either.left(
       new InvalidMigrationStateError(
         'Invalid migration state; there atr more executed migrations than migrations'
@@ -39,7 +39,7 @@ export function create(
         index,
         migration
       ): Either.Either<InvalidMigrationStateError, MigrationStateRecord> => {
-        const historyLogEntry = history.entries[index];
+        const historyLogEntry = history.records[index];
 
         if (historyLogEntry == null) {
           return Either.of({
@@ -67,7 +67,7 @@ export function create(
 
         return Either.right({
           ...migration,
-          status: 'EXECUTED',
+          status: 'APPLIED',
           executedAt: historyLogEntry.executedAt,
         });
       }
@@ -82,8 +82,8 @@ export function isPendingMigration(
   return record.status === 'PENDING';
 }
 
-export function isExecutedMigration(
+export function isAppliedMigration(
   record: MigrationStateRecord
-): record is ExecutedMigration {
-  return record.status === 'EXECUTED';
+): record is AppliedMigration {
+  return record.status === 'APPLIED';
 }
